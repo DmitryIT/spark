@@ -1,15 +1,13 @@
 from pyspark.sql import SparkSession, DataFrameWriter
 
-log_file = "46421-0011_00_mod.csv"
 spark = SparkSession.builder.master("local[*]").appName("Hello_App").getOrCreate()
-
-log_data = spark.read.csv(path=log_file, sep=";")
-num_rows = log_data.count()
-log_data.summary().show()
-log_data.printSchema()
-
-msg = "log file {} has {} rows"
-print(msg.format(log_file, num_rows))
-
-log_data.write.parquet(path="landings.parquet", mode="overwrite", compression="gzip")
+spark.conf.set("spark.sql.shuffle.partition", "5")
+spark.conf.set("parquet.summary.metadata", "false")
+landing_data = spark.read.csv("46421-0011_00_mod.csv", sep=";", inferSchema=True)
+landing_data.sort("_c1")
+landing_data.printSchema()
+landing_data.show(n=2, truncate=False)
+print('DataFrame has {} rows'.format( landing_data.count()) )
+landing_data.write.parquet('landing.parquet', 
+                                            compression='gzip', mode='overwrite')
 spark.stop()
